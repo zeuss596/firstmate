@@ -1,0 +1,87 @@
+===============================================================================
+ fm-teardown worktreeless-terminal carve-out - end-to-end manual evidence
+ commit under test: 9c5bd90b856494d6ffe1d12bf4901675dabd5da8
+ date: 2026-09-24T16:36:00Z
+===============================================================================
+
+Scenario (the real-world Forge Design case, replayed on a dev home copy):
+ - treehouse pool slot 1 is held by the LIVING task forge-design-wireframes-d2
+   (record names worktree=, .fm-slot-owner claim, and a real live worker
+    process cd-ed inside the slot);
+ - the TERMINAL task forge-design-wireframes-d1 (kind=ship, status done, deliverable written)
+   has NO worktree= line: the allocator moved it onto forge-design-wireframes-d2.
+
+-------------------------------------------------------------------------------
+ d1 record before teardown (/tmp/fm-evidence-final/home/state/forge-design-wireframes-d1.meta):
+-------------------------------------------------------------------------------
+window=firstmate:fm-forge-design-wireframes-d1
+endpoint_task_id=forge-design-wireframes-d1
+project=/tmp/fm-evidence-final/project
+kind=ship
+mode=no-mistakes
+yolo=off
+spawn_gen=s1.42.1
+
+-------------------------------------------------------------------------------
+$ fm-teardown.sh forge-design-wireframes-d1   (no --force)
+-------------------------------------------------------------------------------
+/tmp/fm-evidence-final/project: skipped: no origin remote
+teardown forge-design-wireframes-d1 complete (window firstmate:fm-forge-design-wireframes-d1; no worktree identity on the record, so no pool slot was read, killed, reset, or returned)
+Backlog: forge-design-wireframes-d1 just finished (this home keeps no markdown backlog at /tmp/fm-evidence-final/home/data/backlog.md). Update /tmp/fm-evidence-final/home/data/backlog.md - move forge-design-wireframes-d1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+[stderr]
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  2 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /home/msi/.no-mistakes/worktrees/7a7594beeae9/01M3A2TNH90ZFFWW9NKFZE5TWP/.pi/extensions/fm-primary-turnend-guard.ts -e /home/msi/.no-mistakes/worktrees/7a7594beeae9/01M3A2TNH90ZFFWW9NKFZE5TWP/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+exit code: 0
+
+-------------------------------------------------------------------------------
+ Every runtime command teardown issued (fake tmux/treehouse log):
+-------------------------------------------------------------------------------
+tmux <list-windows> <-t> <firstmate> <-F> <#{window_name}>
+tmux <kill-window> <-t> <=firstmate:=fm-forge-design-wireframes-d1>
+tmux <display-message> <-p> <-t> <firstmate:fm-forge-design-wireframes-d2> <#{pane_id}>
+tmux <display-message> <-p> <-t> <firstmate:fm-forge-design-wireframes-d2> <#{pane_id}>
+tmux <capture-pane> <-p> <-t> <firstmate:fm-forge-design-wireframes-d2> <-S> <-40>
+
+-------------------------------------------------------------------------------
+ State after teardown
+-------------------------------------------------------------------------------
+d1 records left in state/:
+  none (meta/status/inbox all removed)
+d1 deliverable kept: yes
+pool slot tree untouched (sentinel present): yes
+d2 record kept: yes
+slot claim still: task=forge-design-wireframes-d2 home=/tmp/fm-evidence-final/home 
+d2 live worker still alive: yes
+treehouse invoked: 0 time(s)
+kill-window target(s): tmux <kill-window> <-t> <=firstmate:=fm-forge-design-wireframes-d1>
+
+Expected: teardown exits 0 with the dedicated carve-out completion line;
+kills ONLY the exact recorded identity =firstmate:=fm-forge-design-wireframes-d1; never runs a
+treehouse (pool) command; leaves the slot, d2's record, claim, and live
+worker untouched.
+
+===============================================================================
+ Counter-check: orca worktreeless terminal record auto-declines (no classifier)
+===============================================================================
+$ fm-teardown.sh orca-workless-1   (worktreeless terminal ship record, backend=orca)
+REFUSED: task orca-workless-1 has a missing, empty, or ambiguous worktree identity; preserving task state.
+exit code: 1
+record kept: yes
+runtime commands issued before the refusal: 0
+Expected: the shared validator's refusal stays the answer (orca has no
+recovery classifier, so the carve-out can never qualify).
+
+===============================================================================
+ Fail-before proof: same scenario on the BASE commit e1b7f4f (bin only)
+===============================================================================
+$ (base commit) fm-teardown.sh forge-design-wireframes-d1
+REFUSED: task forge-design-wireframes-d1 has a missing, empty, or ambiguous worktree identity; preserving task state.
+exit code: 1
+Expected: the pre-fix refusal that stranded the record - the exact bug
+this change fixes.
