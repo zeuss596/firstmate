@@ -1,0 +1,56 @@
+###############################################################
+# ACT 1 - the live registered watch (production list output)
+###############################################################
+SOURCE                       ADAPTER      OWNER      PENDING
+guard-board-src              lavish       task:boardguard/listening 0
+
+### running the real watcher against the quiet guardian pane (first sight)
+watcher still alive after a full poll cycle: yes
+watcher stdout (should be empty): []
+wake queue (should be empty):     []
+wedge escalation counter:         absent (never started)
+stale suppressor advanced to the current pane hash: yes
+triage log (operator surface):
+    [2026-10-07T19:19:19+0200] absorbed non-terminal stale (settled board watch parked, idle 0s): test:fm-boardguard
+
+###############################################################
+# ACT 2 - wedge threshold crossed and crossed again, watch live
+###############################################################
+watcher survived ~8s (4x past a 2s wedge threshold): yes
+watcher stdout (should be empty): []
+wake queue (should be empty):     []
+wedge escalation counter:         absent (never started)
+triage log, one line per threshold pass (all absorbed as parked-watch):
+    [2026-10-07T19:19:21+0200] absorbed non-terminal stale timer reset: test:fm-boardguard
+    [2026-10-07T19:19:23+0200] absorbed non-terminal stale (settled board watch parked, idle 2s): test:fm-boardguard
+    [2026-10-07T19:19:25+0200] absorbed non-terminal stale (settled board watch parked, idle 2s): test:fm-boardguard
+    [2026-10-07T19:19:27+0200] absorbed non-terminal stale (settled board watch parked, idle 2s): test:fm-boardguard
+
+###############################################################
+# ACT 2b - bounded re-surface: idle 500s on a 240s cadence
+###############################################################
+watcher re-surfaced exactly once with (stdout):
+    stale: test:fm-boardguard (idle 501s, settled board review parked on its live registered board watch for 501s, rechecked on a long cadence not a wedge; confirm the registered watch is still live)
+wedge escalation counter still: absent
+
+###############################################################
+# ACT 3 - the registered watch really dies
+###############################################################
+killed the real watch runner (pid 2964985)
+production list now reports:
+    SOURCE                       ADAPTER      OWNER      PENDING
+    guard-board-src              lavish       task:boardguard/dead 0
+watcher stdout (the alarm the captain must still get):
+    check: process-event source stranded: procevent:guard-board-src:stranded:.claim.L6wXl2-2964985
+wedge escalation counter: absent
+
+### the stranded-source check is actionable and wakes FIRST (one-shot per
+### claim generation); acknowledge it and let the next supervision cycle run
+second cycle, watch still dead, watcher stdout:
+    stale: test:fm-boardguard (idle 501s, possible wedge, escalation 1)
+wedge escalation counter: 1
+production list still reports:
+    SOURCE                       ADAPTER      OWNER      PENDING
+    guard-board-src              lavish       task:boardguard/dead 0
+
+MANUAL E2E: all acts behaved as intended

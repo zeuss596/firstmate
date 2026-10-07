@@ -1,0 +1,21 @@
+### Leg A: settled board review + LIVE registered watch, quiet pane, escalation threshold 3s
+--- real 'fm-procevent.sh list' OWNER column:
+SOURCE                       ADAPTER      OWNER      PENDING
+guard-board-src              lavish       task:boardguard/listening 0
+--- watcher stdout after ~9s quiet pane (empty == no alarm):
+[end stdout]
+--- wake queue entries: 0
+--- wedge escalation counter file:
+(absent - never started)
+--- watcher triage log (the supervisor's own record):
+[2026-10-07T19:07:44+0200] absorbed non-terminal stale (settled board watch parked, idle 0s): test:fm-boardguard
+[2026-10-07T19:07:45+0200] absorbed non-terminal stale timer reset: test:fm-boardguard
+[2026-10-07T19:07:48+0200] absorbed non-terminal stale (settled board watch parked, idle 3s): test:fm-boardguard
+[2026-10-07T19:07:51+0200] absorbed non-terminal stale (settled board watch parked, idle 3s): test:fm-boardguard
+
+### Leg B: same pane, watch retired (no registered watch) - threshold 3s
+no sources registered
+--- watcher stdout (the stuck-worker alarm the captain receives):
+stale: test:fm-boardguard (idle 4s, possible wedge, escalation 1)
+--- wedge escalation counter file: 1
+--- triage log:
