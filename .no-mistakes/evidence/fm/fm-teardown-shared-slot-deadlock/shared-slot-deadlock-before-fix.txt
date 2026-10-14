@@ -1,0 +1,53 @@
+# Shared-slot cleanup deadlock - BEFORE the fix (fm-teardown at 7d14fc1^, pre-relaxation)
+# Scenario: finished tasks d3-qa-mission and d3-qa-inventory both name one pool slot;
+# the slot's owner claim names d3-qa-inventory (second spawn overwrote it).
+# Both teardowns refuse on each other's record: the circular deadlock, with no override (--force refused too).
+
+================ BEFORE: the deadlock state ================
+--- state: two finished tasks, one slot, claim names d3-qa-inventory ---
+records:      d3-qa-inventory.meta d3-qa-mission.meta 
+slot claim:   task=d3-qa-inventory home=/tmp/fm-deadlock-repro.6nB2iO/home 
+slot sentinel present: yes
+slot checkout present: yes
+worker alive in slot:  yes
+runtime calls: none
+total 8
+-rw-rw-r-- 1 msi msi 173 Oct 14 11:47 d3-qa-inventory.meta
+-rw-rw-r-- 1 msi msi 169 Oct 14 11:47 d3-qa-mission.meta
+
+===== STEP 1: non-owner task teardown (d3-qa-mission) =====
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  2 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /home/msi/.no-mistakes/worktrees/7a7594beeae9/01M4WW4V4BSWRM1JJPZV0FE4RV/.pi/extensions/fm-primary-turnend-guard.ts -e /home/msi/.no-mistakes/worktrees/7a7594beeae9/01M4WW4V4BSWRM1JJPZV0FE4RV/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REFUSED: task d3-qa-mission's recorded worktree /tmp/fm-deadlock-repro.6nB2iO/pool/1/project is also task d3-qa-inventory's recorded worktree.
+Returning that pool slot would kill d3-qa-inventory's processes and reset its copy, so nothing was changed - not even with --force.
+Reconcile whichever record is wrong (bin/fm-crew-state.sh d3-qa-mission; bin/fm-crew-state.sh d3-qa-inventory), then re-run teardown.
+[exit code: 1]
+--- state: after non-owner teardown ---
+records:      d3-qa-inventory.meta d3-qa-mission.meta 
+slot claim:   task=d3-qa-inventory home=/tmp/fm-deadlock-repro.6nB2iO/home 
+slot sentinel present: yes
+slot checkout present: yes
+worker alive in slot:  yes
+runtime calls: none
+
+the live process in the slot survived: yes
+(worker stopped: the finished task's own worker has exited; the owner task's teardown may now return the slot)
+
+===== STEP 2: owner task teardown (d3-qa-inventory) =====
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+REFUSED: task d3-qa-inventory's recorded worktree /tmp/fm-deadlock-repro.6nB2iO/pool/1/project is also task d3-qa-mission's recorded worktree.
+Returning that pool slot would kill d3-qa-mission's processes and reset its copy, so nothing was changed - not even with --force.
+Reconcile whichever record is wrong (bin/fm-crew-state.sh d3-qa-inventory; bin/fm-crew-state.sh d3-qa-mission), then re-run teardown.
+[exit code: 1]
+--- state: after owner teardown ---
+records:      d3-qa-inventory.meta d3-qa-mission.meta 
+slot claim:   task=d3-qa-inventory home=/tmp/fm-deadlock-repro.6nB2iO/home 
+slot sentinel present: yes
+slot checkout present: yes
+worker alive in slot:  no
+runtime calls: none

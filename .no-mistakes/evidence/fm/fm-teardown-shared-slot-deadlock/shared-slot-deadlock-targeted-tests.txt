@@ -1,0 +1,19 @@
+# Targeted tests at f39da40 (tests/fm-teardown-endpoint-safety.test.sh)
+
+$ bash tests/.targeted-teardown-tests.sh   # suite file with only the 4 slot-ownership tests invoked
+ok - fm-teardown: a pool slot claimed by another task is left alone while the task's own cleanup finishes
+ok - fm-teardown: a stale record on a claimed slot retires, then the claimant tears down
+ok - fm-teardown: a pool slot named by a second record refuses even when the slot claim names this task
+ok - fm-teardown: a task's own slot claim, and an unclaimed slot, both still tear down
+
+# Regression quality: the new test catches an over-relaxed implementation.
+# Mutation: require_exclusive_worktree_slot_record skips the record scan when the
+# slot claim names THIS task ([ ... != other ] -> [ ... = absent ]):
+not ok - teardown killed the worker holding the contested pool slot
+
+# Regression quality: the deadlock test fails against the pre-fix teardown (7d14fc1^):
+not ok - records-only teardown of a stale record on a claimed slot failed:
+REFUSED: task stale-task's recorded worktree ... is also task live-task's recorded worktree.
+
+# Full component suite:
+$ bash tests/fm-teardown-endpoint-safety.test.sh   # 29/29 ok, ~40s

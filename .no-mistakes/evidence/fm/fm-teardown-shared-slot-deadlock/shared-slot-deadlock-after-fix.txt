@@ -1,0 +1,66 @@
+# Shared-slot cleanup deadlock - AFTER the fix (bin/fm-teardown.sh at f39da40)
+# Same scenario and fixture as the before-fix run. Step 1: the NON-owner task's
+# teardown completes its own record cleanup, skipping every slot-touching step
+# (claim, copy, live process untouched; no treehouse call). Step 2: the OWNER
+# task's teardown completes normally and returns the slot (treehouse <return>).
+# Note: the WATCHER DOWN banner is supervision noise from this validation sandbox,
+# emitted before the guarded operation; it is unrelated to the change.
+
+================ BEFORE: the deadlock state ================
+--- state: two finished tasks, one slot, claim names d3-qa-inventory ---
+records:      d3-qa-inventory.meta d3-qa-mission.meta 
+slot claim:   task=d3-qa-inventory home=/tmp/fm-deadlock-repro.EmxPjM/home 
+slot sentinel present: yes
+slot checkout present: yes
+worker alive in slot:  yes
+runtime calls: none
+total 8
+-rw-rw-r-- 1 msi msi 173 Oct 14 11:46 d3-qa-inventory.meta
+-rw-rw-r-- 1 msi msi 169 Oct 14 11:46 d3-qa-mission.meta
+
+===== STEP 1: non-owner task teardown (d3-qa-mission) =====
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  2 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /home/msi/.no-mistakes/worktrees/7a7594beeae9/01M4WW4V4BSWRM1JJPZV0FE4RV/.pi/extensions/fm-primary-turnend-guard.ts -e /home/msi/.no-mistakes/worktrees/7a7594beeae9/01M4WW4V4BSWRM1JJPZV0FE4RV/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+warning: task d3-qa-mission's recorded worktree /tmp/fm-deadlock-repro.EmxPjM/pool/1/project was reassigned to task d3-qa-inventory (home /tmp/fm-deadlock-repro.EmxPjM/home), which claimed that pool slot after this record was written; that slot is no longer d3-qa-mission's, so its processes, copy, and claim are left untouched and only d3-qa-mission's own cleanup runs.
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+/tmp/fm-deadlock-repro.EmxPjM/project: skipped: no origin remote
+teardown d3-qa-mission complete (window firstmate:fm-d3-qa-mission; pool slot /tmp/fm-deadlock-repro.EmxPjM/worktree left to task d3-qa-inventory (home /tmp/fm-deadlock-repro.EmxPjM/home), which it was reassigned to)
+Backlog: d3-qa-mission just finished (this home keeps no markdown backlog at /tmp/fm-deadlock-repro.EmxPjM/home/data/backlog.md). Update /tmp/fm-deadlock-repro.EmxPjM/home/data/backlog.md - move d3-qa-mission to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+[exit code: 0]
+--- state: after non-owner teardown ---
+records:      d3-qa-inventory.meta home-summary.json terminal-outcomes 
+slot claim:   task=d3-qa-inventory home=/tmp/fm-deadlock-repro.EmxPjM/home 
+slot sentinel present: yes
+slot checkout present: yes
+worker alive in slot:  yes
+runtime calls: tmux <kill-window -t =firstmate:=fm-d3-qa-mission>
+tmux <display-message -p -t firstmate:fm-d3-qa-inventory #{pane_id}>
+tmux <display-message -p -t firstmate:fm-d3-qa-inventory #{pane_id}>
+tmux <capture-pane -p -t firstmate:fm-d3-qa-inventory -S -40>
+
+the live process in the slot survived: yes
+(worker stopped: the finished task's own worker has exited; the owner task's teardown may now return the slot)
+
+===== STEP 2: owner task teardown (d3-qa-inventory) =====
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+/tmp/fm-deadlock-repro.EmxPjM/project: skipped: no origin remote
+teardown d3-qa-inventory complete (window firstmate:fm-d3-qa-inventory, worktree /tmp/fm-deadlock-repro.EmxPjM/worktree)
+Backlog: d3-qa-inventory just finished (this home keeps no markdown backlog at /tmp/fm-deadlock-repro.EmxPjM/home/data/backlog.md). Update /tmp/fm-deadlock-repro.EmxPjM/home/data/backlog.md - move d3-qa-inventory to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+[exit code: 0]
+--- state: after owner teardown ---
+records:      home-summary.json terminal-outcomes 
+slot claim:   
+slot sentinel present: no
+slot checkout present: yes
+worker alive in slot:  no
+runtime calls: tmux <kill-window -t =firstmate:=fm-d3-qa-mission>
+tmux <display-message -p -t firstmate:fm-d3-qa-inventory #{pane_id}>
+tmux <display-message -p -t firstmate:fm-d3-qa-inventory #{pane_id}>
+tmux <capture-pane -p -t firstmate:fm-d3-qa-inventory -S -40>
+treehouse <return --force /tmp/fm-deadlock-repro.EmxPjM/worktree>
+tmux <kill-window -t =firstmate:=fm-d3-qa-inventory>
